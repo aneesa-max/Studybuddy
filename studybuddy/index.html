@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Buddy — AI Study Agent for BSCS Students</title>
+  <meta name="description" content="AI-powered adaptive study sessions for BSCS university students." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+  /* ═══════════════════════════════════════════════════════════
+     Design Tokens
+  ═══════════════════════════════════════════════════════════ */
+  :root {
+    --bg:        #08080f;
+    --bg-card:   #0f0f1a;
+    --bg-input:  #0b0b16;
+    --bg-hover:  #141424;
+    --border:    #1c1c30;
+    --border-hi: #6366f1;
+
+    --purple:    #6366f1;
+    --purple-lt: #818cf8;
+    --purple-dk: #3730a3;
+    --purple-glow: rgba(99,102,241,.2);
+    --purple-bg:   rgba(99,102,241,.07);
+
+    --green:     #22c55e;
+    --green-bg:  rgba(34,197,94,.1);
+    --green-bd:  rgba(34,197,94,.25);
+
+    --yellow:    #eab308;
+    --yellow-bg: rgba(234,179,8,.1);
+    --yellow-bd: rgba(234,179,8,.25);
+
+    --red:       #ef4444;
+    --red-bg:    rgba(239,68,68,.1);
+    --red-bd:    rgba(239,68,68,.25);
+
+    --text:      #f0f0f8;
+    --text-2:    #7070a0;
+    --text-3:    #3a3a5c;
+
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 18px;
+    --r-xl: 24px;
+
+    --shadow: 0 20px 60px rgba(0,0,0,.6), 0 4px 12px rgba(0,0,0,.4);
+    --tr: .2s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     Reset & Base
+  ═══════════════════════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px 80px;
+    line-height: 1.6;
+    overflow-x: hidden;
+
+    /* Radial purple aurora */
+    background-image:
+      radial-gradient(ellipse 70% 45% at 50% -5%, rgba(99,102,241,.18) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 30% at 90% 80%, rgba(99,102,241,.07) 0%, transparent 50%);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     Screen Container
+  ═══════════════════════════════════════════════════════════ */
+  .screen {
+    display: none;
+    width: 100%;
+    max-width: 580px;
+    animation: screen-in .35s cubic-bezier(.4,0,.2,1) both;
+  }
+
+  .screen.active { display: flex; flex-direction: column; gap: 20px; }
+
+  @keyframes screen-in {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     Card
+  ═══════════════════════════════════════════════════════════ */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: 32px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(99,102,241,.5), transparent);
+    pointer-events: none;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     Typography
+  ═══════════════════════════════════════════════════════════ */
+  .section-label {
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--purple-lt);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  h1 {
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    font-weight: 900;
+    letter-spacing: -.04em;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 30%, var(--purple-lt) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    color: var(--text);
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  p { color: var(--text-2); font-size: .9rem; line-height: 1.65; }
+
+  /* ═══════════════════════════════════════════════════════════
+     Form Elements
+  ═══════════════════════════════════════════════════════════ */
+  .form-group { display: flex; flex-direction: column; gap: 7px; }
+
+  label {
+    font-size: .73rem;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  .input-wrap { position: relative; }
+
+  .input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    pointer-events: none;
+    opacity: .4;
+    transition: opacity var(--tr);
+  }
+
+  input[type="text"],
+  select,
+  textarea {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: .9rem;
+    outline: none;
+    transition: border-color var(--tr), box-shadow var(--tr), background var(--tr);
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input[type="text"],
+  select { padding: 13px 14px 13px 42px; }
+
+  input[type="text"]::placeholder { color: var(--text-3); }
+
+  input[type="text"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--border-hi);
+    box-shadow: 0 0 0 3px var(--purple-glow);
+    background: var(--bg-hover);
+  }
+
+  .input-wrap:focus-within .input-icon { opacity: .85; }
+
+  /* Select arrow */
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--text-3);
+    pointer-events: none;
+    transition: color var(--tr);
+  }
+  .select-wrap:focus-within::after { color: var(--purple-lt); }
+  select option { background: var(--bg-card); }
+
+  textarea {
+    padding: 14px;
+    resize: vertical;
+    min-height: 110px;
+    font-size: .9rem;
+    line-height: 1.6;
+  }
+  textarea::placeholder { color: var(--text-3); }
+
+  /* ═══════════════════════════════════════════════════════════
+     Buttons
+  ═══════════════════════════════════════════════════════════ */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: var(--r-md);
+    font-family: 'Inter', sans-serif;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform var(--tr), box-shadow var(--tr), filter var(--tr), opacity var(--tr);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: .01em;
+  }
+
+  .btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+
+  /* Primary */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--purple-dk) 0%, var(--purple) 100%);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(99,102,241,.35);
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.12) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  .btn-primary:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(99,102,241,.5);
+    filter: brightness(1.08);
+  }
+
+  .btn-primary:not(:disabled):active { transform: translateY(0); }
+
+  /* Ghost */
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:not(:disabled):hover {
+    border-color: var(--purple);
+    color: var(--purple-lt);
+    background: var(--purple-bg);
+  }
+
+  /* Arrow animation */
+  .btn-arrow { transition: transform var(--tr); }
+  .btn-primary:not(:disabled):hover .btn-arrow { transform: translateX(4px); }
+
+  /* Ripple */
+  @keyframes ripple { to { transform: scale(4.5); opacity: 0; } }
+  .ripple-el {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,.18);
+    transform: scale(0);
+    animation: ripple .55s linear;
+    pointer-events: none;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     Spinner / Loading
+  ═══════════════════════════════════════════════════════════ */
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2.5px solid rgba(255,255,255,.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .loading-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px;
+    text-align: center;
+  }
+
+  .spinner-lg { width: 36px; height: 36px; border-width: 3px; }
+
+  /* ═══════════════════════════════════════════════════════════
+     Error Banner
+  ═══════════════════════════════════════════════════════════ */
+  .error-banner {
+    background: var(--red-bg);
+    border: 1px solid var(--red-bd);
+    border-radius: var(--r-md);
+    padding: 14px 18px;
+    font-size: .85rem;
+    color: var(--red);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    animation: screen-in .3s ease both;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     SCREEN 1 — Start
+  ═══════════════════════════════════════════════════════════ */
+  .logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    padding-bottom: 8px;
+  }
+
+  .logo-icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--purple-dk), var(--purple));
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    box-shadow: 0 8px 30px rgba(99,102,241,.45), inset 0 1px 0 rgba(255,255,255,.12);
+    animation: logo-pulse 3.5s ease-in-out infinite;
+  }
+
+  @keyframes logo-pulse {
+    0%,100% { box-shadow: 0 8px 30px rgba(99,102,241,.45), inset 0 1px 0 rgba(255,255,255,.12); }
+    50%      { box-shadow: 0 8px 42px rgba(99,102,241,.7),  inset 0 1px 0 rgba(255,255,255,.12); }
+  }
+
+  .subtitle {
+    font-size: .92rem;
+    color: var(--text-2);
+    max-width: 360px;
+  }
+
+  .badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: .7rem;
+    font-weight: 500;
+    color: var(--text-2);
+  }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--purple);
+    box-shadow: 0 0 5px var(--purple);
+  }
+
+  .dot.g { background: var(--green); box-shadow: 0 0 5px var(--green); }
+
+  .form-stack { display: flex; flex-direction: column; gap: 18px; }
+
+  /* ═══════════════════════════════════════════════════════════
+     SCREEN 2 — Plan
+  ═══════════════════════════════════════════════════════════ */
+  .plan-header { margin-bottom: 24px; }
+  .plan-header p { margin-top: 6px; }
+
+  .subtopic-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .subtopic-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 18px 20px;
+    transition: border-color var(--tr), background var(--tr), transform var(--tr);
+    cursor: default;
+  }
+
+  .subtopic-card:hover {
+    border-color: rgba(99,102,241,.4);
+    background: var(--bg-hover);
+    transform: translateX(3px);
+  }
+
+  .subtopic-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple-dk), var(--purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .8rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(99,102,241,.35);
+  }
+
+  .subtopic-info { flex: 1; min-width: 0; }
+  .subtopic-info h3 { font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .subtopic-info p  { font-size: .76rem; color: var(--text-2); margin-top: 2px; }
+
+  .subtopic-time {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--purple-lt);
+    background: var(--purple-bg);
+    border: 1px solid rgba(99,102,241,.2);
+    border-radius: 100px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     SCREEN 3 — Question
+  ═══════════════════════════════════════════════════════════ */
+  .q-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .q-meta h2 { font-size: 1.1rem; }
+  .q-meta p  { font-size: .8rem; margin-top: 3px; }
+
+  /* Difficulty badge */
+  .diff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 100px;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .diff-badge.easy   { color: var(--green);  background: var(--green-bg);  border: 1px solid var(--green-bd); }
+  .diff-badge.medium { color: var(--yellow); background: var(--yellow-bg); border: 1px solid var(--yellow-bd); }
+  .diff-badge.hard   { color: var(--red);    background: var(--red-bg);    border: 1px solid var(--red-bd); }
+  .diff-badge::before { content: '●'; font-size: .55rem; }
+
+  .question-box {
+    background: var(--bg-input);
+    border: 1px solid rgba(99,102,241,.25);
+    border-radius: var(--r-lg);
+    padding: 22px;
+    font-size: .92rem;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+    margin-bottom: 20px;
+  }
+
+  /* Progress strip */
+  .progress-strip { display: flex; flex-direction: column; gap: 6px; }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: .72rem;
+    color: var(--text-2);
+    font-weight: 500;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--purple-dk), var(--purple));
+    border-radius: 100px;
+    transition: width .5s ease;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     SCREEN 4 — Feedback
+  ═══════════════════════════════════════════════════════════ */
+
+  /* Score display */
+  .score-display {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 8px 0 20px;
+  }
+
+  .score-circle {
+    position: relative;
+    width: 90px; height: 90px;
+    flex-shrink: 0;
+  }
+
+  .score-circle svg { transform: rotate(-90deg); }
+  .score-circle .track  { fill: none; stroke: var(--border); stroke-width: 7; }
+  .score-circle .fill   { fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset .9s cubic-bezier(.4,0,.2,1); }
+
+  .score-value {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 1.45rem;
+    line-height: 1;
+  }
+
+  .score-value span { font-size: .55rem; font-weight: 500; color: var(--text-2); margin-top: 2px; }
+
+  .score-info { flex: 1; }
+
+  .verdict {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: .8rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .verdict.correct   { color: var(--green);  background: var(--green-bg);  border: 1px solid var(--green-bd); }
+  .verdict.incorrect { color: var(--red);    background: var(--red-bg);    border: 1px solid var(--red-bd); }
+
+  .feedback-text { font-size: .88rem; color: var(--text-2); line-height: 1.6; }
+
+  .hint-box {
+    background: var(--yellow-bg);
+    border: 1px solid var(--yellow-bd);
+    border-radius: var(--r-md);
+    padding: 14px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: .85rem;
+    color: var(--yellow);
+    line-height: 1.55;
+  }
+
+  .next-diff-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .8rem;
+    color: var(--text-2);
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 10px 14px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     Summary Screen
+  ═══════════════════════════════════════════════════════════ */
+  .summary-hero {
+    text-align: center;
+    padding: 16px 0 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .trophy { font-size: 52px; animation: trophy-bounce .6s cubic-bezier(.36,.07,.19,.97) both; }
+
+  @keyframes trophy-bounce {
+    0%  { transform: scale(0) rotate(-15deg); opacity: 0; }
+    60% { transform: scale(1.15) rotate(5deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  .avg-score-big {
+    font-size: 3.5rem;
+    font-weight: 900;
+    letter-spacing: -.04em;
+    line-height: 1;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-label { font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+  .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-top: 2px; }
+
+  .topics-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .topic-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 12px 16px;
+    font-size: .85rem;
+  }
+
+  .topic-score-pill {
+    font-size: .78rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 100px;
+  }
+
+  .motivation {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(99,102,241,.03));
+    border: 1px solid rgba(99,102,241,.2);
+    border-radius: var(--r-lg);
+    font-size: .92rem;
+    font-weight: 500;
+    color: var(--purple-lt);
+    line-height: 1.55;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     Divider
+  ═══════════════════════════════════════════════════════════ */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 4px 0;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     Utilities
+  ═══════════════════════════════════════════════════════════ */
+  .mt4  { margin-top: 4px; }
+  .mt8  { margin-top: 8px; }
+  .mt12 { margin-top: 12px; }
+  .mt16 { margin-top: 16px; }
+  .mt20 { margin-top: 20px; }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  @media (max-width: 480px) {
+    .card { padding: 22px 18px; }
+    .stats-grid { grid-template-columns: 1fr; }
+  }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 1 — Start
+═══════════════════════════════════════════════════════════ -->
+<section id="screen-start" class="screen active" role="main" aria-label="Start session">
+
+  <div class="card">
+    <div class="logo-wrap">
+      <div class="logo-icon" aria-hidden="true">📚</div>
+      <h1>Study Buddy</h1>
+      <p class="subtitle">AI-powered study agent for BSCS students</p>
+      <div class="badges">
+        <span class="badge"><span class="dot g"></span>Gemini 2.5 Flash</span>
+        <span class="badge"><span class="dot"></span>Adaptive Questions</span>
+        <span class="badge"><span class="dot"></span>Instant Feedback</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">⚡ New Session</div>
+    <div id="start-error" style="display:none" class="error-banner" role="alert"></div>
+
+    <div class="form-stack">
+      <div class="form-group">
+        <label for="topic-input">Study Topic</label>
+        <div class="input-wrap">
+          <input
+            id="topic-input"
+            type="text"
+            placeholder="e.g. Process Scheduling, Binary Trees, SQL Joins…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <span class="input-icon" aria-hidden="true">✏️</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="subject-select">Subject</label>
+        <div class="select-wrap input-wrap">
+          <select id="subject-select" aria-label="Select subject">
+            <option value="" disabled selected>— Choose a subject —</option>
+            <option value="operating_systems">🖥️  Operating Systems</option>
+            <option value="data_structures">🌳  Data Structures</option>
+            <option value="dbms">🗄️  Database Management (DBMS)</option>
+          </select>
+          <span class="input-icon" aria-hidden="true">📂</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary mt8" id="plan-btn">
+        <span id="plan-btn-label">Generate Learning Plan</span>
+        <span id="plan-btn-spinner" class="spinner" style="display:none" aria-hidden="true"></span>
+        <span class="btn-arrow" aria-hidden="true">→</span>
+      </button>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 2 — Learning Plan
+═══════════════════════════════════════════════════════════ -->
+<section id="screen-plan" class="screen" role="main" aria-label="Learning plan">
+
+  <div class="card">
+    <div class="section-label">📋 Your Learning Plan</div>
+    <div class="plan-header">
+      <h2 id="plan-topic">Topic</h2>
+      <p id="plan-subject-label" class="mt4">Loading subject…</p>
+    </div>
+    <div class="subtopic-list" id="subtopic-list" aria-label="Subtopics">
+      <!-- Subtopic cards injected here -->
+    </div>
+    <button class="btn btn-primary mt20" id="start-studying-btn">
+      <span>Start Studying</span>
+      <span class="btn-arrow" aria-hidden="true">→</span>
+    </button>
+    <button class="btn btn-ghost mt12" id="plan-back-btn">↩ Change Topic</button>
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 3 — Question
+═══════════════════════════════════════════════════════════ -->
+<section id="screen-question" class="screen" role="main" aria-label="Practice question">
+
+  <div class="card">
+    <div class="progress-strip" id="q-progress">
+      <div class="progress-label">
+        <span id="q-progress-label">Subtopic 1 of 3</span>
+        <span id="q-progress-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="q-progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="question-card">
+    <!-- Filled dynamically -->
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 4 — Feedback
+═══════════════════════════════════════════════════════════ -->
+<section id="screen-feedback" class="screen" role="main" aria-label="Answer feedback">
+
+  <div class="card" id="feedback-card">
+    <!-- Filled dynamically -->
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 5 — Summary
+═══════════════════════════════════════════════════════════ -->
+<section id="screen-summary" class="screen" role="main" aria-label="Session summary">
+
+  <div class="card" id="summary-card">
+    <!-- Filled dynamically -->
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     JavaScript
+═══════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ── Config ────────────────────────────────────────────────────────────── */
+const BASE   = 'http://localhost:5000';
+const API    = { plan: `${BASE}/api/plan`, question: `${BASE}/api/question`, evaluate: `${BASE}/api/evaluate` };
+
+const MOTIVATIONAL = [
+  "Every expert was once a beginner — keep going! 🚀",
+  "Understanding beats memorisation every single time. 🧠",
+  "Consistency is the engine of mastery. See you next session! 🎯",
+  "You just made your future self smarter. Well done! ⭐",
+  "Small steps every day build into giant leaps. Keep it up! 💪",
+];
+
+const SUBJECT_LABELS = {
+  operating_systems: 'Operating Systems',
+  data_structures:   'Data Structures',
+  dbms:              'Database Management (DBMS)',
+};
+
+/* ── Session state ─────────────────────────────────────────────────────── */
+let S = {};   // cleared on each new session
+
+function initState(topic, subject, subtopics) {
+  S = {
+    topic, subject,
+    subtopics,                // array of { name, estimated_minutes, order }
+    idx: 0,                   // current subtopic index (0-based)
+    difficulty: 'easy',
+    currentQuestion: '',
+    scores: [],               // one per subtopic
+    diffArc: ['easy'],
+  };
+}
+
+/* ── Screen routing ────────────────────────────────────────────────────── */
+const screens = {
+  start:    document.getElementById('screen-start'),
+  plan:     document.getElementById('screen-plan'),
+  question: document.getElementById('screen-question'),
+  feedback: document.getElementById('screen-feedback'),
+  summary:  document.getElementById('screen-summary'),
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ── Utilities ─────────────────────────────────────────────────────────── */
+function esc(s) {
+  return String(s).replace(/[&<>"']/g,
+    c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function scoreColor(s) {
+  return s >= 70 ? 'var(--green)' : s >= 40 ? 'var(--yellow)' : 'var(--red)';
+}
+
+function addRipple(btn, e) {
+  const r = btn.getBoundingClientRect();
+  const el = document.createElement('span');
+  const sz = Math.max(r.width, r.height);
+  el.className = 'ripple-el';
+  Object.assign(el.style, {
+    width: sz + 'px', height: sz + 'px',
+    left:  (e.clientX - r.left  - sz/2) + 'px',
+    top:   (e.clientY - r.top   - sz/2) + 'px',
+  });
+  btn.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+function diffBadge(d) {
+  return `<span class="diff-badge ${d}">${d}</span>`;
+}
+
+function showError(el, msg) {
+  el.innerHTML = `⚠️  ${esc(msg)}`;
+  el.style.display = 'flex';
+}
+
+function hideError(el) {
+  el.style.display = 'none';
+}
+
+/* ── Fetch with error handling ─────────────────────────────────────────── */
+async function apiPost(url, body) {
+  const res  = await fetch(url, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+  return data;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SCREEN 1 — Start
+══════════════════════════════════════════════════════════════ */
+const planBtn      = document.getElementById('plan-btn');
+const planBtnLabel = document.getElementById('plan-btn-label');
+const planSpinner  = document.getElementById('plan-btn-spinner');
+const startError   = document.getElementById('start-error');
+
+planBtn.addEventListener('click', async (e) => {
+  addRipple(planBtn, e);
+
+  const topic   = document.getElementById('topic-input').value.trim();
+  const subject = document.getElementById('subject-select').value;
+
+  hideError(startError);
+  if (!topic)   return showError(startError, 'Please enter a study topic.');
+  if (!subject) return showError(startError, 'Please choose a subject.');
+
+  // Loading state
+  planBtnLabel.textContent = 'Generating plan…';
+  planSpinner.style.display = 'block';
+  planBtn.disabled = true;
+
+  try {
+    const plan = await apiPost(API.plan, { topic, subject });
+    initState(topic, subject, plan.subtopics);
+    renderPlanScreen();
+    showScreen('plan');
+  } catch (err) {
+    showError(startError, `Could not generate plan: ${err.message}`);
+  } finally {
+    planBtnLabel.textContent = 'Generate Learning Plan';
+    planSpinner.style.display = 'none';
+    planBtn.disabled = false;
+  }
+});
+
+document.getElementById('topic-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') planBtn.click();
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SCREEN 2 — Plan
+══════════════════════════════════════════════════════════════ */
+function renderPlanScreen() {
+  document.getElementById('plan-topic').textContent = S.topic;
+  document.getElementById('plan-subject-label').textContent =
+    `Subject: ${SUBJECT_LABELS[S.subject] || S.subject}  ·  3 subtopics  ·  Starting: Easy`;
+
+  const list = document.getElementById('subtopic-list');
+  list.innerHTML = S.subtopics.map((st, i) => `
+    <div class="subtopic-card" role="listitem">
+      <div class="subtopic-num" aria-hidden="true">${i + 1}</div>
+      <div class="subtopic-info">
+        <h3>${esc(st.name)}</h3>
+        <p>Subtopic ${i + 1} of ${S.subtopics.length}</p>
+      </div>
+      <span class="subtopic-time">⏱ ${st.estimated_minutes} min</span>
+    </div>
+  `).join('');
+}
+
+document.getElementById('start-studying-btn').addEventListener('click', (e) => {
+  addRipple(e.currentTarget, e);
+  S.idx = 0;
+  S.difficulty = 'easy';
+  S.scores = [];
+  S.diffArc = ['easy'];
+  loadQuestion();
+});
+
+document.getElementById('plan-back-btn').addEventListener('click', () => showScreen('start'));
+
+/* ══════════════════════════════════════════════════════════════
+   SCREEN 3 — Question
+══════════════════════════════════════════════════════════════ */
+function updateProgress() {
+  const pct   = Math.round((S.idx / S.subtopics.length) * 100);
+  const label = `Subtopic ${S.idx + 1} of ${S.subtopics.length}`;
+  document.getElementById('q-progress-label').textContent = label;
+  document.getElementById('q-progress-pct').textContent   = pct + '%';
+  document.getElementById('q-progress-fill').style.width  = pct + '%';
+}
+
+async function loadQuestion() {
+  showScreen('question');
+  updateProgress();
+
+  const st = S.subtopics[S.idx];
+
+  // Show loader in question card
+  document.getElementById('question-card').innerHTML = `
+    <div class="loading-block" aria-live="polite" aria-busy="true">
+      <div class="spinner spinner-lg" aria-hidden="true"></div>
+      <p>QuestionGeneratorAgent is generating a ${diffBadge(S.difficulty)} question on<br>
+         <strong style="color:var(--text)">${esc(st.name)}</strong>…</p>
+    </div>
+  `;
+
+  try {
+    const q = await apiPost(API.question, {
+      subject:    S.subject,
+      subtopic:   st.name,
+      difficulty: S.difficulty,
+    });
+    S.currentQuestion = q.question;
+    renderQuestionForm(st);
+  } catch (err) {
+    document.getElementById('question-card').innerHTML = `
+      <div class="error-banner" role="alert">⚠️ ${esc(err.message)}</div>
+      <button class="btn btn-primary mt16" id="q-retry-btn"><span>Retry</span></button>
+    `;
+    document.getElementById('q-retry-btn').addEventListener('click', loadQuestion);
+  }
+}
+
+function renderQuestionForm(st) {
+  document.getElementById('question-card').innerHTML = `
+    <div class="q-header">
+      <div class="q-meta">
+        <h2>${esc(st.name)}</h2>
+        <p>Type your answer below and submit.</p>
+      </div>
+      ${diffBadge(S.difficulty)}
+    </div>
+
+    <div class="question-box" id="q-text" aria-label="Question">${esc(S.currentQuestion)}</div>
+
+    <div class="form-group">
+      <label for="answer-box">Your Answer</label>
+      <textarea
+        id="answer-box"
+        placeholder="Write your answer here…"
+        aria-label="Answer input"
+      ></textarea>
+    </div>
+
+    <div id="q-error" class="error-banner mt12" style="display:none" role="alert"></div>
+
+    <button class="btn btn-primary mt16" id="submit-btn">
+      <span id="submit-label">Submit Answer</span>
+      <span id="submit-spinner" class="spinner" style="display:none" aria-hidden="true"></span>
+      <span class="btn-arrow" aria-hidden="true">→</span>
+    </button>
+  `;
+
+  document.getElementById('answer-box').focus();
+  document.getElementById('submit-btn').addEventListener('click', submitAnswer);
+}
+
+async function submitAnswer(e) {
+  addRipple(e.currentTarget, e);
+  const ans     = document.getElementById('answer-box').value.trim();
+  const qErr    = document.getElementById('q-error');
+  const subBtn  = document.getElementById('submit-btn');
+  const subLbl  = document.getElementById('submit-label');
+  const subSpin = document.getElementById('submit-spinner');
+
+  hideError(qErr);
+  if (!ans) {
+    showError(qErr, 'Please write an answer before submitting.');
+    document.getElementById('answer-box').focus();
+    return;
+  }
+
+  subLbl.textContent       = 'Marking your answer…';
+  subSpin.style.display    = 'block';
+  subBtn.disabled          = true;
+
+  try {
+    const ev = await apiPost(API.evaluate, {
+      question:       S.currentQuestion,
+      answer:         ans,
+      difficulty:     S.difficulty,
+    });
+    S.scores.push(ev.score);
+    S.difficulty = ev.next_difficulty;
+    S.diffArc.push(ev.next_difficulty);
+    renderFeedback(ev);
+    showScreen('feedback');
+  } catch (err) {
+    showError(qErr, `Evaluation failed: ${err.message}`);
+    subLbl.textContent    = 'Submit Answer';
+    subSpin.style.display = 'none';
+    subBtn.disabled       = false;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SCREEN 4 — Feedback
+══════════════════════════════════════════════════════════════ */
+function renderFeedback(ev) {
+  const score   = ev.score;
+  const correct = ev.correct;
+  const isLast  = S.idx >= S.subtopics.length - 1;
+
+  const col   = scoreColor(score);
+  const r     = 38;
+  const circ  = 2 * Math.PI * r;
+  const start = circ;   // start fully hidden
+  const end   = circ - (score / 100) * circ;
+
+  document.getElementById('feedback-card').innerHTML = `
+    <div class="section-label">📊 Evaluation Result</div>
+
+    <div class="score-display">
+      <div class="score-circle">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle class="track" cx="45" cy="45" r="${r}"/>
+          <circle class="fill" id="score-fill" cx="45" cy="45" r="${r}"
+            stroke="${col}"
+            stroke-dasharray="${circ}"
+            stroke-dashoffset="${start}"/>
+        </svg>
+        <div class="score-value" style="color:${col}">
+          ${score}
+          <span>/ 100</span>
+        </div>
+      </div>
+
+      <div class="score-info">
+        <div class="verdict ${correct ? 'correct' : 'incorrect'}">
+          ${correct ? '✓ Correct' : '✗ Needs improvement'}
+        </div>
+        <p class="feedback-text">${esc(ev.feedback)}</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    ${ev.hint ? `
+      <div class="hint-box mt12" role="note" aria-label="Hint">
+        <span style="flex-shrink:0">💡</span>
+        <span>${esc(ev.hint)}</span>
+      </div>
+    ` : ''}
+
+    <div class="next-diff-row mt12">
+      <span style="color:var(--text-3);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em">Next difficulty</span>
+      ${diffBadge(ev.next_difficulty)}
+    </div>
+
+    <button class="btn btn-primary mt20" id="next-q-btn">
+      <span>${isLast ? '🏁 See Summary' : 'Next Question'}</span>
+      <span class="btn-arrow" aria-hidden="true">→</span>
+    </button>
+  `;
+
+  // Animate ring after paint
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const fill = document.getElementById('score-fill');
+    if (fill) fill.style.strokeDashoffset = end;
+  }));
+
+  document.getElementById('next-q-btn').addEventListener('click', (e) => {
+    addRipple(e.currentTarget, e);
+    S.idx++;
+    if (S.idx >= S.subtopics.length) renderSummary();
+    else loadQuestion();
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Summary Screen
+══════════════════════════════════════════════════════════════ */
+function renderSummary() {
+  const scores  = S.scores;
+  const avg     = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const avgCol  = scoreColor(avg);
+  const mot     = MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)];
+  const subLbl  = SUBJECT_LABELS[S.subject] || S.subject;
+  const finalD  = S.diffArc[S.diffArc.length - 1];
+
+  const topicsHtml = S.subtopics.map((st, i) => {
+    const sc  = scores[i] ?? '—';
+    const col = typeof sc === 'number' ? scoreColor(sc) : 'var(--text-2)';
+    return `<div class="topic-item">
+      <span style="font-size:.84rem;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(st.name)}</span>
+      <span class="topic-score-pill" style="color:${col};background:${col}18;border:1px solid ${col}30">${sc}${typeof sc === 'number' ? '/100' : ''}</span>
+    </div>`;
+  }).join('');
+
+  const diffArcHtml = S.diffArc.map(d => diffBadge(d)).join(`<span style="color:var(--text-3);font-size:.7rem;margin:0 2px">→</span>`);
+
+  document.getElementById('summary-card').innerHTML = `
+    <div class="summary-hero">
+      <div class="trophy" aria-hidden="true">🏆</div>
+      <h2>Session Complete!</h2>
+      <div class="avg-score-big" style="color:${avgCol}">${avg.toFixed(1)}</div>
+      <p style="margin-top:-4px;font-size:.8rem">Average score out of 100</p>
+    </div>
+
+    <div class="divider mt12"></div>
+
+    <div class="stats-grid mt12">
+      <div class="stat-card">
+        <span class="stat-label">Topic</span>
+        <span class="stat-value" style="font-size:.9rem">${esc(S.topic)}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Subject</span>
+        <span class="stat-value" style="font-size:.88rem">${esc(subLbl)}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Final Difficulty</span>
+        <div class="stat-value">${diffBadge(finalD)}</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Questions Done</span>
+        <span class="stat-value">${scores.length} / ${S.subtopics.length}</span>
+      </div>
+    </div>
+
+    <div class="section-label mt20">📚 Topics Covered</div>
+    <div class="topics-list">${topicsHtml}</div>
+
+    <div class="section-label mt20">📈 Difficulty Arc</div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 16px;">
+      ${diffArcHtml}
+    </div>
+
+    <div class="motivation mt16">${esc(mot)}</div>
+
+    <button class="btn btn-primary mt16" id="new-session-btn">
+      <span>Start New Session</span>
+      <span class="btn-arrow" aria-hidden="true">→</span>
+    </button>
+  `;
+
+  showScreen('summary');
+
+  document.getElementById('new-session-btn').addEventListener('click', (e) => {
+    addRipple(e.currentTarget, e);
+    document.getElementById('topic-input').value = '';
+    document.getElementById('subject-select').value = '';
+    hideError(startError);
+    showScreen('start');
+  });
+}
+</script>
+</body>
+</html>

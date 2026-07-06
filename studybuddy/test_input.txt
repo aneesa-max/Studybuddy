@@ -1,0 +1,6 @@
+Process Scheduling
+operating_systems
+
+Round Robin gives each process a fixed time quantum, so no single process monopolizes the CPU. It's fair and good for time-sharing systems.
+FCFS schedules processes in order of arrival and is non-preemptive. It can cause the convoy effect where short processes wait behind long ones.
+Priority scheduling assigns a priority number to each process and the CPU always runs the highest priority process. It can cause starvation for low-priority processes, which aging can fix.
